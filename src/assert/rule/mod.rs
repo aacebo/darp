@@ -386,7 +386,6 @@ impl<'de> serde::Deserialize<'de> for RuleSet {
 
 #[cfg(test)]
 mod tests {
-    use crate::reflect;
     use crate::reflect::ToValue;
 
     use super::*;

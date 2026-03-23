@@ -39,6 +39,14 @@ impl Template {
     }
 }
 
+impl std::str::FromStr for Template {
+    type Err = parse::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse::parse(s)
+    }
+}
+
 impl std::fmt::Display for Template {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.src)
@@ -200,7 +208,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "serde")]
     #[test]
     fn serde_round_trip() {
         let src = "Hello {{ name | upper }}!";

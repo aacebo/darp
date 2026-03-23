@@ -195,7 +195,6 @@ impl Default for Schema {
 #[cfg(test)]
 mod tests {
     use crate::path;
-    use crate::reflect;
     use crate::reflect::ToValue;
 
     use super::*;
