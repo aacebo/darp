@@ -23,9 +23,11 @@ doctest = false
 [features]
 default = []
 derive = ["darp-derive"]
+regex = ["dep:regex"]
 
 [dependencies]
 serde = { version = "1", features = ["default", "derive"] }
+regex = { version = "1", optional = true }
 darp-derive = { path = "./crates/darp-derive", optional = true }
 
 [dev-dependencies]
