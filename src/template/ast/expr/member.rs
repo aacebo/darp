@@ -1,0 +1,44 @@
+use crate::path;
+use crate::reflect;
+use crate::template::Scope;
+use crate::template::ast::{
+    EvalError, Result, Span, TypeError, UndefinedFieldError, value_type_name,
+};
+
+use super::Expr;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MemberExpr {
+    pub object: Box<Expr>,
+    pub field: String,
+    pub span: Span,
+}
+
+impl MemberExpr {
+    pub fn eval(&self, scope: &Scope) -> Result<reflect::Value> {
+        let obj = self.object.eval(scope)?;
+        if !obj.is_struct() {
+            return Err(EvalError::TypeError(TypeError {
+                expected: "struct",
+                got: value_type_name(&obj),
+            })
+            .with_span(self.span.clone()));
+        }
+
+        obj.as_struct()
+            .field(path::Ident::key(&self.field))
+            .map(|v| v.to_value())
+            .ok_or_else(|| {
+                EvalError::UndefinedField(UndefinedFieldError {
+                    name: self.field.clone(),
+                })
+                .with_span(self.span.clone())
+            })
+    }
+}
+
+impl std::fmt::Display for MemberExpr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.span)
+    }
+}

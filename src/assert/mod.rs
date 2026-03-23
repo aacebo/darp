@@ -1,0 +1,705 @@
+mod any;
+mod array;
+mod bool;
+mod context;
+mod error;
+mod float;
+mod int;
+mod number;
+mod object;
+mod phase;
+pub mod rule;
+mod string;
+
+pub use any::*;
+pub use array::*;
+pub use bool::*;
+pub use context::*;
+pub use error::*;
+pub use float::*;
+pub use int::*;
+pub use number::*;
+pub use object::*;
+pub use phase::*;
+pub use rule::*;
+pub use string::*;
+
+use crate::reflect;
+
+pub trait ToSchema {
+    fn to_schema(&self) -> Schema;
+}
+
+impl ToSchema for crate::Value {
+    fn to_schema(&self) -> Schema {
+        match self {
+            crate::Value::Null => any().equals(crate::valueof!(null)).to_schema(),
+            crate::Value::Bool(_) => bool().to_schema(),
+            crate::Value::Number(_) => number().to_schema(),
+            crate::Value::String(_) => string().to_schema(),
+            crate::Value::Object(o) => match o {
+                reflect::Object::Struct(v) => {
+                    let mut schema = object();
+
+                    for (ident, item) in v.items() {
+                        schema = schema.field(&ident.to_string(), item.to_value());
+                    }
+
+                    schema.to_schema()
+                }
+                reflect::Object::Array(_) => array().to_schema(),
+                v => panic!("unsupported value {}", v),
+            },
+        }
+    }
+}
+
+pub trait Validate {
+    fn validate(&self) -> Result<crate::Value, ValidError>;
+}
+
+pub trait Validator {
+    fn validate(&self, ctx: &Context) -> Result<crate::Value, ValidError>;
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Schema {
+    Any(AnySchema),
+    Bool(BoolSchema),
+    String(StringSchema),
+    Number(NumberSchema),
+    Int(IntSchema),
+    Float(FloatSchema),
+    Array(ArraySchema),
+    Object(ObjectSchema),
+}
+
+impl Schema {
+    pub fn is_any(&self) -> bool {
+        matches!(self, Self::Any(_))
+    }
+
+    pub fn is_bool(&self) -> bool {
+        matches!(self, Self::Bool(_))
+    }
+
+    pub fn is_string(&self) -> bool {
+        matches!(self, Self::String(_))
+    }
+
+    pub fn is_number(&self) -> bool {
+        matches!(self, Self::Number(_))
+    }
+
+    pub fn is_int(&self) -> bool {
+        matches!(self, Self::Int(_))
+    }
+
+    pub fn is_float(&self) -> bool {
+        matches!(self, Self::Float(_))
+    }
+
+    pub fn is_array(&self) -> bool {
+        matches!(self, Self::Array(_))
+    }
+
+    pub fn is_object(&self) -> bool {
+        matches!(self, Self::Object(_))
+    }
+
+    pub fn as_any(&self) -> Option<&AnySchema> {
+        match self {
+            Self::Any(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_bool(&self) -> Option<&BoolSchema> {
+        match self {
+            Self::Bool(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_string(&self) -> Option<&StringSchema> {
+        match self {
+            Self::String(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_number(&self) -> Option<&NumberSchema> {
+        match self {
+            Self::Number(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_int(&self) -> Option<&IntSchema> {
+        match self {
+            Self::Int(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_float(&self) -> Option<&FloatSchema> {
+        match self {
+            Self::Float(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_array(&self) -> Option<&ArraySchema> {
+        match self {
+            Self::Array(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn as_object(&self) -> Option<&ObjectSchema> {
+        match self {
+            Self::Object(v) => Some(v),
+            _ => None,
+        }
+    }
+}
+
+impl ToSchema for Schema {
+    fn to_schema(&self) -> Schema {
+        self.clone()
+    }
+}
+
+impl Validator for Schema {
+    fn validate(&self, ctx: &Context) -> Result<crate::Value, ValidError> {
+        match self {
+            Self::Any(v) => v.validate(ctx),
+            Self::Bool(v) => v.validate(ctx),
+            Self::String(v) => v.validate(ctx),
+            Self::Number(v) => v.validate(ctx),
+            Self::Int(v) => v.validate(ctx),
+            Self::Float(v) => v.validate(ctx),
+            Self::Array(v) => v.validate(ctx),
+            Self::Object(v) => v.validate(ctx),
+        }
+    }
+}
+
+impl Default for Schema {
+    fn default() -> Self {
+        Self::Any(AnySchema::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::path;
+    use crate::reflect;
+    use crate::reflect::ToValue;
+
+    use super::*;
+
+    mod validate {
+        use super::*;
+
+        #[test]
+        fn any_dispatches() {
+            let schema = Schema::Any(any());
+            assert!(schema.validate(&"anything".to_value().into()).is_ok());
+        }
+
+        #[test]
+        fn bool_dispatches() {
+            let schema = Schema::Bool(bool());
+            assert!(schema.validate(&true.to_value().into()).is_ok());
+            assert!(schema.validate(&42i32.to_value().into()).is_err());
+        }
+
+        #[test]
+        fn bool_with_rules_dispatches() {
+            let schema = Schema::Bool(bool().required().equals(true));
+            assert!(schema.validate(&true.to_value().into()).is_ok());
+            assert!(schema.validate(&false.to_value().into()).is_err());
+            assert!(schema.validate(&crate::valueof!(null).into()).is_err());
+        }
+
+        #[test]
+        fn array_dispatches() {
+            let schema = Schema::Array(array());
+            assert!(schema.validate(&vec![1i32, 2, 3].to_value().into()).is_ok());
+            assert!(schema.validate(&42i32.to_value().into()).is_err());
+        }
+
+        #[test]
+        fn array_allows_null() {
+            let schema = Schema::Array(array());
+            assert!(schema.validate(&crate::valueof!(null).into()).is_ok());
+        }
+
+        #[test]
+        fn array_required_rejects_null() {
+            let schema = Schema::Array(array().required());
+            assert!(schema.validate(&crate::valueof!(null).into()).is_err());
+        }
+
+        #[test]
+        fn array_min() {
+            let schema = Schema::Array(array().min(2));
+            assert!(schema.validate(&vec![1i32, 2, 3].to_value().into()).is_ok());
+            assert!(schema.validate(&vec![1i32].to_value().into()).is_err());
+        }
+
+        #[test]
+        fn array_max() {
+            let schema = Schema::Array(array().max(2));
+            assert!(schema.validate(&vec![1i32].to_value().into()).is_ok());
+            assert!(
+                schema
+                    .validate(&vec![1i32, 2, 3].to_value().into())
+                    .is_err()
+            );
+        }
+
+        #[test]
+        fn array_items_valid() {
+            let schema = Schema::Array(array().items(string()));
+            let value = vec!["a", "b"].to_value();
+            assert!(schema.validate(&value.into()).is_ok());
+        }
+
+        #[test]
+        fn array_items_invalid() {
+            let schema = Schema::Array(array().items(string()));
+            let value = vec![1i32, 2].to_value();
+            assert!(schema.validate(&value.into()).is_err());
+        }
+
+        #[test]
+        fn array_items_with_inner_rules() {
+            let schema = Schema::Array(array().items(int().required()));
+            let value = vec![1i32, 2, 3].to_value();
+            assert!(schema.validate(&value.into()).is_ok());
+        }
+
+        #[test]
+        fn array_combined_rules() {
+            let schema = Schema::Array(array().required().min(1).max(3).items(int()));
+            assert!(schema.validate(&vec![1i32, 2].to_value().into()).is_ok());
+            assert!(schema.validate(&crate::valueof!(null).into()).is_err());
+            assert!(
+                schema
+                    .validate(&Vec::<i32>::new().to_value().into())
+                    .is_err()
+            );
+            assert!(
+                schema
+                    .validate(&vec![1i32, 2, 3, 4].to_value().into())
+                    .is_err()
+            );
+        }
+
+        #[test]
+        fn array_empty_allowed() {
+            let schema = Schema::Array(array());
+            assert!(
+                schema
+                    .validate(&Vec::<i32>::new().to_value().into())
+                    .is_ok()
+            );
+        }
+
+        #[test]
+        fn object_dispatches() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object());
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("a"), crate::valueof!(1_i32));
+            assert!(schema.validate(&map.to_value().into()).is_ok());
+        }
+
+        #[test]
+        fn object_rejects_non_object() {
+            let schema = Schema::Object(object());
+            assert!(schema.validate(&42i32.to_value().into()).is_err());
+            assert!(schema.validate(&"hello".to_value().into()).is_err());
+        }
+
+        #[test]
+        fn object_allows_null() {
+            let schema = Schema::Object(object());
+            assert!(schema.validate(&crate::valueof!(null).into()).is_ok());
+        }
+
+        #[test]
+        fn object_required_rejects_null() {
+            let schema = Schema::Object(object().required());
+            assert!(schema.validate(&crate::valueof!(null).into()).is_err());
+        }
+
+        #[test]
+        fn object_field_valid() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object().field("name", string()));
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("name"), crate::valueof!("alice"));
+            assert!(schema.validate(&map.to_value().into()).is_ok());
+        }
+
+        #[test]
+        fn object_field_invalid_type() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object().field("name", string()));
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("name"), crate::valueof!(42_i32));
+            assert!(schema.validate(&map.to_value().into()).is_err());
+        }
+
+        #[test]
+        fn object_unexpected_field() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object().field("name", string()));
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("name"), crate::valueof!("alice"));
+            map.insert(path::Ident::key("extra"), crate::valueof!(1_i32));
+            assert!(schema.validate(&map.to_value().into()).is_err());
+        }
+
+        #[test]
+        fn object_missing_required_field() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(
+                object()
+                    .field("name", string().required())
+                    .field("age", int()),
+            );
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("age"), crate::valueof!(30_i32));
+            assert!(schema.validate(&map.to_value().into()).is_err());
+        }
+
+        #[test]
+        fn object_multiple_fields() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object().field("name", string()).field("age", int()));
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("name"), crate::valueof!("alice"));
+            map.insert(path::Ident::key("age"), crate::valueof!(30_i32));
+            assert!(schema.validate(&map.to_value().into()).is_ok());
+        }
+
+        #[test]
+        fn object_nested_object() {
+            use std::collections::HashMap;
+            let inner_schema = object().field("street", string());
+            let schema = Schema::Object(object().field("address", inner_schema));
+            let mut inner = HashMap::new();
+            inner.insert(path::Ident::key("street"), crate::valueof!("123 Main"));
+            let mut outer = HashMap::new();
+            outer.insert(path::Ident::key("address"), inner.to_value());
+            assert!(schema.validate(&outer.to_value().into()).is_ok());
+        }
+
+        #[test]
+        fn object_combined_rules() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object().required().field("name", string().required()));
+            // valid
+            let mut map = HashMap::new();
+            map.insert(path::Ident::key("name"), crate::valueof!("alice"));
+            assert!(schema.validate(&map.into()).is_ok());
+            // null rejected
+            assert!(schema.validate(&crate::valueof!(null).into()).is_err());
+        }
+
+        #[test]
+        fn object_empty_fields_valid() {
+            use std::collections::HashMap;
+            let schema = Schema::Object(object());
+            let map: HashMap<path::Ident, crate::Value> = HashMap::new();
+            assert!(schema.validate(&map.to_value().into()).is_ok());
+        }
+    }
+
+    mod serde {
+        use crate::assert::*;
+
+        #[test]
+        fn serialize_any_empty() {
+            let schema = Schema::Any(any());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"any"}"#);
+        }
+
+        #[test]
+        fn serialize_bool_empty() {
+            let schema = Schema::Bool(bool());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"bool"}"#);
+        }
+
+        #[test]
+        fn serialize_any_with_rules() {
+            let schema = Schema::Any(any().required().options(&[&1i32, &"test", &true]));
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "any");
+            assert_eq!(v["required"], true);
+            assert_eq!(v["options"], serde_json::json!([1, "test", true]));
+        }
+
+        #[test]
+        fn deserialize_any() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "any"}"#).unwrap();
+            assert!(matches!(schema, Schema::Any(_)));
+        }
+
+        #[test]
+        fn deserialize_bool() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "bool"}"#).unwrap();
+            assert!(matches!(schema, Schema::Bool(_)));
+        }
+
+        #[test]
+        fn roundtrip_any_with_rules() {
+            let json = r#"{"type":"any","required":true,"options":[1,"test",true]}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::Any(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn serialize_string_empty() {
+            let schema = Schema::String(string());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"string"}"#);
+        }
+
+        #[test]
+        fn serialize_string_with_rules() {
+            let schema = Schema::String(string().required().equals("hello"));
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "string");
+            assert_eq!(v["required"], true);
+            assert_eq!(v["equals"], "hello");
+        }
+
+        #[test]
+        fn deserialize_string() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "string"}"#).unwrap();
+            assert!(matches!(schema, Schema::String(_)));
+        }
+
+        #[test]
+        fn roundtrip_string_with_rules() {
+            let json = r#"{"type":"string","required":true,"equals":"hello"}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::String(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn serialize_number_empty() {
+            let schema = Schema::Number(number());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"number"}"#);
+        }
+
+        #[test]
+        fn serialize_number_with_rules() {
+            let schema = Schema::Number(number().required().equals(reflect::Number::from_i32(42)));
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "number");
+            assert_eq!(v["required"], true);
+            assert_eq!(v["equals"], 42);
+        }
+
+        #[test]
+        fn deserialize_number() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "number"}"#).unwrap();
+            assert!(matches!(schema, Schema::Number(_)));
+        }
+
+        #[test]
+        fn roundtrip_number_with_rules() {
+            let json = r#"{"type":"number","required":true,"options":[1,2,3]}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::Number(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn serialize_int_empty() {
+            let schema = Schema::Int(int());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"int"}"#);
+        }
+
+        #[test]
+        fn serialize_int_with_rules() {
+            let schema = Schema::Int(int().required().equals(reflect::Int::from_i32(10)));
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "int");
+            assert_eq!(v["required"], true);
+            assert_eq!(v["equals"], 10);
+        }
+
+        #[test]
+        fn deserialize_int() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "int"}"#).unwrap();
+            assert!(matches!(schema, Schema::Int(_)));
+        }
+
+        #[test]
+        fn roundtrip_int_with_rules() {
+            let json = r#"{"type":"int","required":true,"options":[1,2,3]}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::Int(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn serialize_float_empty() {
+            let schema = Schema::Float(float());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"float"}"#);
+        }
+
+        #[test]
+        fn serialize_float_with_rules() {
+            let schema = Schema::Float(float().required().equals(reflect::Float::from_f64(3.14)));
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "float");
+            assert_eq!(v["required"], true);
+            assert_eq!(v["equals"], 3.14);
+        }
+
+        #[test]
+        fn deserialize_float() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "float"}"#).unwrap();
+            assert!(matches!(schema, Schema::Float(_)));
+        }
+
+        #[test]
+        fn roundtrip_float_with_rules() {
+            let json = r#"{"type":"float","required":true,"options":[1.0,2.5,3.14]}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::Float(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn serialize_array_empty() {
+            let schema = Schema::Array(array());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"array"}"#);
+        }
+
+        #[test]
+        fn serialize_array_with_rules() {
+            let schema = Schema::Array(array().required().min(1).max(10));
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "array");
+            assert_eq!(v["required"], true);
+            assert_eq!(v["min"], 1);
+            assert_eq!(v["max"], 10);
+        }
+
+        #[test]
+        fn deserialize_array() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "array"}"#).unwrap();
+            assert!(matches!(schema, Schema::Array(_)));
+        }
+
+        #[test]
+        fn roundtrip_array_with_rules() {
+            let json = r#"{"type":"array","required":true,"min":1,"max":10}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::Array(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn serialize_object_empty() {
+            let schema = Schema::Object(object());
+            let json = serde_json::to_string(&schema).unwrap();
+            assert_eq!(json, r#"{"type":"object"}"#);
+        }
+
+        #[test]
+        fn serialize_object_with_fields() {
+            let schema = Schema::Object(
+                object()
+                    .required()
+                    .field("name", string())
+                    .field("age", int()),
+            );
+            let json = serde_json::to_string(&schema).unwrap();
+            let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(v["type"], "object");
+            assert_eq!(v["required"], true);
+            assert!(v["fields"].is_object());
+            assert!(v["fields"]["name"].is_object());
+            assert!(v["fields"]["age"].is_object());
+        }
+
+        #[test]
+        fn deserialize_object() {
+            let schema: Schema = serde_json::from_str(r#"{"type": "object"}"#).unwrap();
+            assert!(matches!(schema, Schema::Object(_)));
+        }
+
+        #[test]
+        fn roundtrip_object_with_fields() {
+            let json = r#"{"type":"object","required":true,"fields":{"name":{"type":"string"},"age":{"type":"int"}}}"#;
+            let schema: Schema = serde_json::from_str(json).unwrap();
+            assert!(matches!(schema, Schema::Object(_)));
+
+            let reserialized = serde_json::to_string(&schema).unwrap();
+            let v1: serde_json::Value = serde_json::from_str(json).unwrap();
+            let v2: serde_json::Value = serde_json::from_str(&reserialized).unwrap();
+            assert_eq!(v1, v2);
+        }
+
+        #[test]
+        fn deserialize_missing_type_errors() {
+            let result = serde_json::from_str::<Schema>(r#"{"required": true}"#);
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn deserialize_unknown_type_errors() {
+            let result = serde_json::from_str::<Schema>(r#"{"type": "nonexistent"}"#);
+            assert!(result.is_err());
+        }
+    }
+}

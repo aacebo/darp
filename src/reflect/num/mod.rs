@@ -1,0 +1,390 @@
+mod float;
+mod int;
+mod uint;
+
+pub use float::*;
+pub use int::*;
+pub use uint::*;
+
+use super::{ToValue, Value};
+
+/// A numeric value that can hold a float, signed integer, or unsigned integer.
+#[derive(Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+pub enum Number {
+    Int(Int),
+    UInt(UInt),
+    Float(Float),
+}
+
+impl Number {
+    pub fn is_float(&self) -> bool {
+        matches!(self, Self::Float(_))
+    }
+
+    pub fn is_int(&self) -> bool {
+        matches!(self, Self::Int(_))
+    }
+
+    pub fn is_uint(&self) -> bool {
+        matches!(self, Self::UInt(_))
+    }
+
+    pub fn as_int(&self) -> &Int {
+        match self {
+            Self::Int(v) => v,
+            v => panic!("expected Int, received {}", std::any::type_name_of_val(v)),
+        }
+    }
+
+    pub fn as_uint(&self) -> &UInt {
+        match self {
+            Self::UInt(v) => v,
+            v => panic!("expected UInt, received {}", std::any::type_name_of_val(v)),
+        }
+    }
+
+    pub fn as_float(&self) -> &Float {
+        match self {
+            Self::Float(v) => v,
+            v => panic!("expected Float, received {}", std::any::type_name_of_val(v)),
+        }
+    }
+
+    pub fn type_id(&self) -> std::any::TypeId {
+        match self {
+            Self::Int(v) => v.type_id(),
+            Self::UInt(v) => v.type_id(),
+            Self::Float(v) => v.type_id(),
+        }
+    }
+}
+
+impl Number {
+    pub fn is_f32(&self) -> bool {
+        matches!(self, Self::Float(v) if v.is_f32())
+    }
+
+    pub fn is_f64(&self) -> bool {
+        matches!(self, Self::Float(v) if v.is_f64())
+    }
+
+    pub fn to_f32(&self) -> f32 {
+        match self {
+            Self::Int(v) => v.to_f32(),
+            Self::UInt(v) => v.to_f32(),
+            Self::Float(v) => v.to_f32(),
+        }
+    }
+
+    pub fn to_f64(&self) -> f64 {
+        match self {
+            Self::Int(v) => v.to_f64(),
+            Self::UInt(v) => v.to_f64(),
+            Self::Float(v) => v.to_f64(),
+        }
+    }
+}
+
+impl Number {
+    pub fn is_i8(&self) -> bool {
+        matches!(self, Self::Int(v) if v.is_i8())
+    }
+
+    pub fn is_i16(&self) -> bool {
+        matches!(self, Self::Int(v) if v.is_i16())
+    }
+
+    pub fn is_i32(&self) -> bool {
+        matches!(self, Self::Int(v) if v.is_i32())
+    }
+
+    pub fn is_i64(&self) -> bool {
+        matches!(self, Self::Int(v) if v.is_i64())
+    }
+
+    pub fn is_i128(&self) -> bool {
+        matches!(self, Self::Int(v) if v.is_i128())
+    }
+
+    pub fn to_i8(&self) -> i8 {
+        match self {
+            Self::Int(v) => v.to_i8(),
+            Self::UInt(v) => v.to_i8(),
+            Self::Float(v) => v.to_i8(),
+        }
+    }
+
+    pub fn to_i16(&self) -> i16 {
+        match self {
+            Self::Int(v) => v.to_i16(),
+            Self::UInt(v) => v.to_i16(),
+            Self::Float(v) => v.to_i16(),
+        }
+    }
+
+    pub fn to_i32(&self) -> i32 {
+        match self {
+            Self::Int(v) => v.to_i32(),
+            Self::UInt(v) => v.to_i32(),
+            Self::Float(v) => v.to_i32(),
+        }
+    }
+
+    pub fn to_i64(&self) -> i64 {
+        match self {
+            Self::Int(v) => v.to_i64(),
+            Self::UInt(v) => v.to_i64(),
+            Self::Float(v) => v.to_i64(),
+        }
+    }
+
+    pub fn to_i128(&self) -> i128 {
+        match self {
+            Self::Int(v) => v.to_i128(),
+            Self::UInt(v) => v.to_i128(),
+            Self::Float(v) => v.to_i128(),
+        }
+    }
+
+    pub fn to_isize(&self) -> isize {
+        match self {
+            Self::Int(v) => v.to_isize(),
+            Self::UInt(v) => v.to_isize(),
+            Self::Float(v) => v.to_isize(),
+        }
+    }
+}
+
+impl Number {
+    pub fn is_u8(&self) -> bool {
+        matches!(self, Self::UInt(v) if v.is_u8())
+    }
+
+    pub fn is_u16(&self) -> bool {
+        matches!(self, Self::UInt(v) if v.is_u16())
+    }
+
+    pub fn is_u32(&self) -> bool {
+        matches!(self, Self::UInt(v) if v.is_u32())
+    }
+
+    pub fn is_u64(&self) -> bool {
+        matches!(self, Self::UInt(v) if v.is_u64())
+    }
+
+    pub fn is_u128(&self) -> bool {
+        matches!(self, Self::UInt(v) if v.is_u128())
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            Self::Int(v) => v.to_u8(),
+            Self::UInt(v) => v.to_u8(),
+            Self::Float(v) => v.to_u8(),
+        }
+    }
+
+    pub fn to_u16(&self) -> u16 {
+        match self {
+            Self::Int(v) => v.to_u16(),
+            Self::UInt(v) => v.to_u16(),
+            Self::Float(v) => v.to_u16(),
+        }
+    }
+
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            Self::Int(v) => v.to_u32(),
+            Self::UInt(v) => v.to_u32(),
+            Self::Float(v) => v.to_u32(),
+        }
+    }
+
+    pub fn to_u64(&self) -> u64 {
+        match self {
+            Self::Int(v) => v.to_u64(),
+            Self::UInt(v) => v.to_u64(),
+            Self::Float(v) => v.to_u64(),
+        }
+    }
+
+    pub fn to_u128(&self) -> u128 {
+        match self {
+            Self::Int(v) => v.to_u128(),
+            Self::UInt(v) => v.to_u128(),
+            Self::Float(v) => v.to_u128(),
+        }
+    }
+
+    pub fn to_usize(&self) -> usize {
+        match self {
+            Self::Int(v) => v.to_usize(),
+            Self::UInt(v) => v.to_usize(),
+            Self::Float(v) => v.to_usize(),
+        }
+    }
+}
+
+impl Ord for Number {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (Self::Int(a), Self::Int(b)) => a.cmp(b),
+            (Self::UInt(a), Self::UInt(b)) => a.cmp(b),
+            (Self::Float(a), Self::Float(b)) => a.cmp(b),
+            _ => self.to_f64().total_cmp(&other.to_f64()),
+        }
+    }
+}
+
+impl PartialOrd for Number {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl From<Number> for Value {
+    fn from(value: Number) -> Self {
+        Self::Number(value)
+    }
+}
+
+impl std::fmt::Debug for Number {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Int(v) => write!(f, "{:#?}", v),
+            Self::UInt(v) => write!(f, "{:#?}", v),
+            Self::Float(v) => write!(f, "{:#?}", v),
+        }
+    }
+}
+
+impl std::fmt::Display for Number {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Int(v) => write!(f, "{}", v),
+            Self::UInt(v) => write!(f, "{}", v),
+            Self::Float(v) => write!(f, "{}", v),
+        }
+    }
+}
+
+impl ToValue for Number {
+    fn to_value(&self) -> Value {
+        Value::Number(*self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_predicates() {
+        let f = Number::from_f64(1.0);
+        assert!(f.is_float());
+        assert!(!f.is_int());
+        assert!(!f.is_uint());
+
+        assert!(Number::from_i32(1).is_int());
+        assert!(Number::from_u32(1).is_uint());
+    }
+
+    #[test]
+    fn as_float() {
+        let n = Number::from_f64(3.14);
+        assert_eq!(*n.as_float(), Float::from_f64(3.14));
+    }
+
+    #[test]
+    fn as_int() {
+        let n = Number::from_i32(42);
+        assert_eq!(*n.as_int(), Int::from_i32(42));
+    }
+
+    #[test]
+    fn as_uint() {
+        let n = Number::from_u32(42);
+        assert_eq!(*n.as_uint(), UInt::from_u32(42));
+    }
+
+    #[test]
+    #[should_panic(expected = "expected Float")]
+    fn as_float_panics_on_mismatch() {
+        Number::from_i32(1).as_float();
+    }
+
+    #[test]
+    #[should_panic(expected = "expected Int")]
+    fn as_int_panics_on_mismatch() {
+        Number::from_f64(1.0).as_int();
+    }
+
+    #[test]
+    #[should_panic(expected = "expected UInt")]
+    fn as_uint_panics_on_mismatch() {
+        Number::from_i32(1).as_uint();
+    }
+
+    #[test]
+    fn to_i64_cross_variant() {
+        assert_eq!(Number::from_u32(42).to_i64(), 42);
+        assert_eq!(Number::from_f64(3.14).to_i64(), 3);
+    }
+
+    #[test]
+    fn to_f64_cross_variant() {
+        assert_eq!(Number::from_i32(42).to_f64(), 42.0);
+        assert_eq!(Number::from_u32(42).to_f64(), 42.0);
+    }
+
+    #[test]
+    fn into_value() {
+        let v = Value::from_i32(5);
+        assert!(matches!(v, Value::Number(_)));
+    }
+
+    #[test]
+    fn display() {
+        assert_eq!(Number::from_f64(1.5).to_string(), "1.5");
+        assert_eq!(Number::from_i32(42).to_string(), "42");
+        assert_eq!(Number::from_u64(100).to_string(), "100");
+    }
+
+    #[test]
+    fn type_id() {
+        assert_eq!(
+            Number::from_f32(1.0).type_id(),
+            std::any::TypeId::of::<f32>()
+        );
+        assert_eq!(
+            Number::from_f64(1.0).type_id(),
+            std::any::TypeId::of::<f64>()
+        );
+        assert_eq!(Number::from_i32(1).type_id(), std::any::TypeId::of::<i32>());
+        assert_eq!(Number::from_u32(1).type_id(), std::any::TypeId::of::<u32>());
+    }
+
+    mod serde {
+        use super::*;
+
+        #[test]
+        fn serialize() {
+            assert_eq!(
+                serde_json::to_string(&Number::from_f64(3.14)).unwrap(),
+                "3.14"
+            );
+            assert_eq!(serde_json::to_string(&Number::from_i32(42)).unwrap(), "42");
+            assert_eq!(serde_json::to_string(&Number::from_i32(-5)).unwrap(), "-5");
+        }
+
+        #[test]
+        fn deserialize() {
+            let n: Number = serde_json::from_str("3.14").unwrap();
+            assert!(n.is_float());
+
+            let n: Number = serde_json::from_str("42").unwrap();
+            assert!(n.is_int());
+        }
+    }
+}
