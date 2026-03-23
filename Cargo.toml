@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [".", "crates/*"]
+default-members = [".", "crates/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+documentation = "https://www.github.com/aacebo/darp"
+homepage = "https://www.github.com/aacebo/darp"
+repository = "https://www.github.com/aacebo/darp"
+
+[package]
+name = "darp"
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+doctest = false
+
+[features]
+default = []
+derive = ["darp-derive"]
+
+[dependencies]
+serde = { version = "1", features = ["default", "derive"] }
+darp-derive = { path = "./crates/darp-derive", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
