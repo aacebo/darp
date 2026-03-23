@@ -32,7 +32,7 @@ impl Struct for HashMap<Ident, Value> {
     }
 
     fn items(&self) -> StructIter<'_> {
-        StructIter::new(self.iter().map(|(k, v)| (k.clone(), v as &dyn ToValue)))
+        StructIter::new(self.iter().map(|(k, v)| (k, v as &dyn ToValue)))
     }
 
     fn field(&self, ident: Ident) -> Option<&dyn ToValue> {
@@ -76,7 +76,7 @@ impl Struct for BTreeMap<Ident, Value> {
     }
 
     fn items(&self) -> StructIter<'_> {
-        StructIter::new(self.iter().map(|(k, v)| (k.clone(), v as &dyn ToValue)))
+        StructIter::new(self.iter().map(|(k, v)| (k, v as &dyn ToValue)))
     }
 
     fn field(&self, ident: Ident) -> Option<&dyn ToValue> {
@@ -136,16 +136,16 @@ impl serde::Serialize for dyn Struct {
     }
 }
 
-pub struct StructIter<'a>(Box<dyn Iterator<Item = (Ident, &'a dyn ToValue)> + 'a>);
+pub struct StructIter<'a>(Box<dyn Iterator<Item = (&'a Ident, &'a dyn ToValue)> + 'a>);
 
 impl<'a> StructIter<'a> {
-    pub fn new<T: Iterator<Item = (Ident, &'a dyn ToValue)> + 'a>(iter: T) -> Self {
+    pub fn new<T: Iterator<Item = (&'a Ident, &'a dyn ToValue)> + 'a>(iter: T) -> Self {
         Self(Box::new(iter))
     }
 }
 
 impl<'a> Iterator for StructIter<'a> {
-    type Item = (Ident, &'a dyn ToValue);
+    type Item = (&'a Ident, &'a dyn ToValue);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
@@ -157,7 +157,7 @@ impl<'a, const N: usize> From<&'a [(Ident, Value); N]> for StructIter<'a> {
         Self::new(
             value
                 .iter()
-                .map(|(ident, value)| (ident.clone(), value as &dyn ToValue)),
+                .map(|(ident, value)| (ident, value as &dyn ToValue)),
         )
     }
 }

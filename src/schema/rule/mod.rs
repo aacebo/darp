@@ -249,6 +249,7 @@ impl RuleSet {
         self.0.iter_mut().find(|r| r.key() == key)
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, rule: Rule) -> Self {
         self.0.push(rule);
         self

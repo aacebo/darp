@@ -18,10 +18,10 @@ pub trait ToValue {
 }
 
 /// A dynamically-typed value that can hold a boolean or any numeric type.
-#[repr(u8)]
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(untagged)]
 pub enum Value {
+    #[default]
     Null,
     Bool(Bool),
     Number(Number),
@@ -30,9 +30,14 @@ pub enum Value {
 }
 
 impl Value {
-    fn discriminant(&self) -> u8 {
-        // Safety: #[repr(u8)] guarantees the first byte is the discriminant
-        unsafe { *std::ptr::from_ref(self).cast::<u8>() }
+    pub fn order(&self) -> u8 {
+        match self {
+            Self::Null => 0,
+            Self::Bool(_) => 1,
+            Self::Number(_) => 2,
+            Self::String(_) => 3,
+            Self::Object(_) => 4,
+        }
     }
 
     pub fn is_null(&self) -> bool {
@@ -307,12 +312,6 @@ impl Value {
     }
 }
 
-impl Default for Value {
-    fn default() -> Self {
-        Self::Null
-    }
-}
-
 impl std::fmt::Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -359,9 +358,8 @@ impl Ord for Value {
             (Self::Number(a), Self::Number(b)) => a.cmp(b),
             (Self::String(a), Self::String(b)) => a.cmp(b),
             (Self::Object(_), Self::Object(_)) => self.to_string().cmp(&other.to_string()),
-            // Cross-type: use #[repr(u8)] discriminant ordering
-            // Null(0) < Bool(1) < Number(2) < String(3) < Object(4)
-            (l, r) => l.discriminant().cmp(&r.discriminant()),
+            // Cross-type ordering: Null < Bool < Number < String < Object
+            _ => self.order().cmp(&other.order()),
         }
     }
 }

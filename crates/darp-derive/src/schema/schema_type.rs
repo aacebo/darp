@@ -99,10 +99,10 @@ fn extract_inner_type<'a>(path: &'a syn::Path, wrapper: &str) -> Option<&'a syn:
         return None;
     }
 
-    if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-        if let Some(syn::GenericArgument::Type(ty)) = args.args.first() {
-            return Some(ty);
-        }
+    if let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+        && let Some(syn::GenericArgument::Type(ty)) = args.args.first()
+    {
+        return Some(ty);
     }
 
     None

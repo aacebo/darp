@@ -28,24 +28,20 @@ impl From<Min> for Rule {
 
 impl Validator for Min {
     fn validate(&self, ctx: &Context) -> Result<crate::Value, ValidError> {
-        if ctx.value.is_array() || ctx.value.is_string() {
-            if ctx.value.len() < self.0.to_usize() {
-                return Err(ctx.error(&format!(
-                    "length must be at least {}, got {}",
-                    self.0.to_usize(),
-                    ctx.value.len()
-                )));
-            }
+        if (ctx.value.is_array() || ctx.value.is_string()) && ctx.value.len() < self.0.to_usize() {
+            return Err(ctx.error(&format!(
+                "length must be at least {}, got {}",
+                self.0.to_usize(),
+                ctx.value.len()
+            )));
         }
 
-        if ctx.value.is_number() {
-            if ctx.value.as_number() < &self.0 {
-                return Err(ctx.error(&format!(
-                    "value must be at least {}, got {}",
-                    &self.0,
-                    ctx.value.as_number()
-                )));
-            }
+        if ctx.value.is_number() && ctx.value.as_number() < &self.0 {
+            return Err(ctx.error(&format!(
+                "value must be at least {}, got {}",
+                &self.0,
+                ctx.value.as_number()
+            )));
         }
 
         Ok(ctx.value.clone())

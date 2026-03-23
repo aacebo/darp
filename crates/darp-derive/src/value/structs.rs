@@ -35,11 +35,17 @@ pub fn derive(input: &syn::DeriveInput, data: &syn::DataStruct) -> TokenStream {
             }
 
             fn items(&self) -> ::darp::value::StructIter<'_> {
+                static KEYS: ::std::sync::LazyLock<[::darp::path::Ident; #len]> =
+                    ::std::sync::LazyLock::new(|| [
+                        #(::darp::path::Ident::from(stringify!(#fields)),)*
+                    ]);
+
+                let values: [&dyn ::darp::value::ToValue; #len] = [
+                    #(&self.#fields as &dyn ::darp::value::ToValue,)*
+                ];
+
                 ::darp::value::StructIter::new(
-                    [#((
-                        ::darp::path::Ident::from(stringify!(#fields)),
-                        &self.#fields as &dyn ::darp::value::ToValue,
-                    ),)*].into_iter()
+                    KEYS.iter().zip(values).map(|(k, v)| (k, v))
                 )
             }
 

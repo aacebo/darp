@@ -20,6 +20,10 @@ edition = "2024"
 [lib]
 doctest = false
 
+[lints.clippy]
+collapsible-if = "allow"
+new-ret-no-self = "allow"
+
 [features]
 default = []
 derive = ["darp-derive"]

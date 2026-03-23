@@ -7,6 +7,7 @@ use crate::value::{ToValue, Value};
 pub struct Str(Box<str>);
 
 impl Str {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(value: &str) -> Self {
         Self(value.into())
     }
@@ -55,6 +56,7 @@ impl From<String> for Value {
 }
 
 impl Value {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(value: &str) -> Self {
         Self::String(Str::from_str(value))
     }

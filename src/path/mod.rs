@@ -65,15 +65,11 @@ impl Path {
     }
 }
 
-impl From<&str> for Path {
-    fn from(value: &str) -> Self {
-        Self::parse(value).unwrap()
-    }
-}
+impl std::str::FromStr for Path {
+    type Err = ParseError;
 
-impl From<String> for Path {
-    fn from(value: String) -> Self {
-        Self::parse(&value).unwrap()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
     }
 }
 
@@ -171,14 +167,13 @@ mod tests {
 
     #[test]
     fn from_str() {
-        let path: Path = "a/b".into();
+        let path: Path = "a/b".parse().unwrap();
         assert_eq!(path.len(), 2);
     }
 
     #[test]
-    fn from_string() {
-        let path: Path = String::from("a/b").into();
-        assert_eq!(path.len(), 2);
+    fn from_str_invalid() {
+        assert!("a//b".parse::<Path>().is_err());
     }
 
     #[test]
