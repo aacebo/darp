@@ -8,7 +8,7 @@ pub use ident::*;
 pub use literal::*;
 pub use punct::*;
 
-use crate::template::LexError;
+use crate::template::{LexError, Output};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
@@ -56,6 +56,12 @@ impl std::fmt::Display for Token {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Stream {
     tokens: Vec<Token>,
+}
+
+impl Stream {
+    pub fn parse(_s: &str) -> Output<Self> {
+        todo!()
+    }
 }
 
 impl std::ops::Deref for Stream {
