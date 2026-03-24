@@ -7,3 +7,4 @@ pub mod token;
 pub use lex::{LexError, Scan};
 pub use source::Span;
 pub use token::Token;
+pub use diagnostic::{Code, Diagnostic, Diagnostics, Label};
