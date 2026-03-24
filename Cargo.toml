@@ -30,7 +30,6 @@ derive = ["darp-derive"]
 regex = ["dep:regex"]
 
 [dependencies]
-logos = { version = "0.16" }
 serde = { version = "1", features = ["default", "derive"] }
 regex = { version = "1", optional = true }
 darp-derive = { path = "./crates/darp-derive", optional = true }
