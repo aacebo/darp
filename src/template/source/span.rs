@@ -21,10 +21,12 @@ impl Span {
         self.src_id
     }
 
+    /// character range
     pub fn range(&self) -> std::ops::Range<usize> {
         self.start..self.end
     }
 
+    /// character length
     pub fn len(&self) -> usize {
         self.end - self.start
     }
@@ -34,7 +36,7 @@ impl Span {
     }
 
     pub fn contains(&self, other: &Self) -> bool {
-        self.src_id == other.src_id && self.start >= other.start && self.end <= other.end
+        self.src_id == other.src_id && other.start >= self.start && other.end <= self.end
     }
 
     pub fn join(self, other: Self) -> Self {
