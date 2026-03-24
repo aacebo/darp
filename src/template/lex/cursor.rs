@@ -1,27 +1,33 @@
-use crate::template::{LexError, Span};
+use crate::template::{LexError, Span, source::SourceId};
 
 /// Zero-copy immutable cursor over source text.
 /// Each parse step returns a new advanced cursor.
 #[derive(Copy, Clone)]
 pub struct Cursor<'a> {
+    src_id: SourceId,
     rest: &'a str,
-    off: u32,
+    offset: usize,
 }
 
 impl<'a> Cursor<'a> {
-    pub fn new(src: &'a str, offset: u32) -> Self {
+    pub fn new(src_id: SourceId, src: &'a str, offset: usize) -> Self {
         Self {
+            src_id,
             rest: src,
-            off: offset,
+            offset,
         }
+    }
+
+    pub fn src_id(&self) -> SourceId {
+        self.src_id
     }
 
     pub fn rest(&self) -> &'a str {
         self.rest
     }
 
-    pub fn offset(&self) -> u32 {
-        self.off
+    pub fn offset(&self) -> usize {
+        self.offset
     }
 
     pub fn is_empty(&self) -> bool {
@@ -36,14 +42,28 @@ impl<'a> Cursor<'a> {
         self.rest.starts_with(s)
     }
 
+    pub fn span_to(&self, end: &Cursor<'_>) -> Span {
+        assert!(self.src_id == end.src_id);
+        Span::new(self.src_id, self.offset, end.offset).into()
+    }
+
+    pub fn span(&self) -> Span {
+        Span::new(self.src_id, self.offset, self.offset + 1).into()
+    }
+
+    pub fn error(&self) -> LexError {
+        LexError::new(self.span())
+    }
+
     /// Advance by `n` bytes, counting characters for the offset.
     pub fn advance(&self, n: usize) -> Self {
         let consumed = &self.rest[..n];
-        let chars = consumed.chars().count() as u32;
+        let chars = consumed.chars().count();
 
         Self {
+            src_id: self.src_id,
             rest: &self.rest[n..],
-            off: self.off + chars,
+            offset: self.offset + chars,
         }
     }
 
@@ -59,19 +79,6 @@ impl<'a> Cursor<'a> {
         }
 
         self.advance(bytes)
-    }
-
-    /// Create a fallback::Span from this cursor to another.
-    pub fn span_to(&self, end: &Cursor<'_>) -> Span {
-        Span::new(self.off, end.off).into()
-    }
-
-    pub fn span(&self) -> Span {
-        Span::new(self.off, self.off + 1).into()
-    }
-
-    pub fn error(&self) -> LexError {
-        LexError::new(self.span())
     }
 
     pub fn skip_whitespace(mut self) -> Self {

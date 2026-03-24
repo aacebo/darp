@@ -8,15 +8,43 @@ pub use span::*;
 
 use std::{cell::RefCell, collections::BTreeMap};
 
+#[repr(transparent)]
+#[derive(Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SourceId(u32);
+
+impl From<u32> for SourceId {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<usize> for SourceId {
+    fn from(value: usize) -> Self {
+        Self(value as u32)
+    }
+}
+
+impl std::fmt::Debug for SourceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::fmt::Display for SourceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Primarily used to map spans (0 based character index ranges)
 /// to bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Source {
+    /// unique source id
+    id: SourceId,
+
     /// raw source text
     text: String,
-
-    /// file-wide lo..hi in proc-macro2 space
-    span: Span,
 
     /// line start offsets, in char units
     lines: Vec<usize>,
@@ -26,7 +54,7 @@ pub struct Source {
 }
 
 impl Source {
-    pub(crate) fn new(start: usize, src: impl Into<String>) -> Self {
+    pub fn new(id: SourceId, src: impl Into<String>) -> Self {
         let text = src.into();
         let mut lines = vec![0];
         let mut total = 0usize;
@@ -43,60 +71,61 @@ impl Source {
         char_to_byte.insert(0, 0);
 
         Self {
+            id,
             text,
-            span: Span::new(start as u32, (start + total) as u32),
             lines,
             char_to_byte: RefCell::new(char_to_byte),
         }
+    }
+
+    pub fn id(&self) -> SourceId {
+        self.id
     }
 
     pub fn text(&self) -> &str {
         &self.text
     }
 
-    pub fn span(&self) -> Span {
-        self.span
+    pub fn len(&self) -> usize {
+        self.text.len()
     }
 
     /// Resolves the given span into a byte index range.
-    pub fn range(&self, span: Span) -> std::ops::Range<usize> {
-        let r = span.byte_range();
+    pub fn byte_range(&self, span: Span) -> std::ops::Range<usize> {
+        let r = span.range();
         self.byte(r.start)..self.byte(r.end)
     }
 
     /// Gets a sub span of source text from the file.
-    pub fn slice(&self, span: Span) -> String {
-        self.text[self.range(span)].to_owned()
+    pub fn slice(&self, span: Span) -> &str {
+        &self.text[self.byte_range(span)]
     }
 
     /// Resolves a global character index within this file into a 0-based `Location`.
     pub fn location(&self, i: usize) -> Location {
-        let index = i - self.span.byte_range().start;
-
-        match self.lines.binary_search(&index) {
-            Err(next) => Location::new(index, next - 1, index - self.lines[next - 1]),
-            Ok(line) => Location::new(index, line, 0),
+        match self.lines.binary_search(&i) {
+            Err(next) => Location::new(i, next - 1, i - self.lines[next - 1]),
+            Ok(line) => Location::new(i, line, 0),
         }
     }
 
     /// Returns the UTF-8 byte index corresponding to a global character index.
     pub fn byte(&self, i: usize) -> usize {
-        let index = i - self.span.byte_range().start;
         let mut cache = self.char_to_byte.borrow_mut();
 
-        if let Some(byte_index) = cache.get(&index) {
+        if let Some(byte_index) = cache.get(&i) {
             return *byte_index;
         }
 
-        let (&ci, &bi) = cache.range(..=index).next_back().unwrap();
+        let (&ci, &bi) = cache.range(..=i).next_back().unwrap();
 
         let mut char_index = ci;
         let mut byte_index = bi;
 
         #[allow(clippy::explicit_counter_loop)]
         for ch in self.text[bi..].chars() {
-            if char_index == index {
-                cache.insert(index, byte_index);
+            if char_index == i {
+                cache.insert(i, byte_index);
                 return byte_index;
             }
 
@@ -104,18 +133,13 @@ impl Source {
             byte_index += ch.len_utf8();
         }
 
-        cache.insert(index, byte_index);
+        cache.insert(i, byte_index);
         byte_index
     }
 }
 
-impl Default for Source {
-    fn default() -> Self {
-        Self {
-            text: String::default(),
-            span: Span::default(),
-            lines: vec![0],
-            char_to_byte: RefCell::new(BTreeMap::default()),
-        }
+impl std::fmt::Display for Source {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.text)
     }
 }

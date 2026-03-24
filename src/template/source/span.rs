@@ -2,65 +2,44 @@ use super::*;
 
 #[derive(Debug, Default, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Span {
+    /// the source id this span belongs to
+    src_id: SourceId,
+
     /// the start char index (inclusive).
-    start: u32,
+    start: usize,
 
     /// the end char index (exclusive).
-    end: u32,
+    end: usize,
 }
 
 impl Span {
-    pub const fn new(start: u32, end: u32) -> Self {
-        Self { start, end }
+    pub const fn new(src_id: SourceId, start: usize, end: usize) -> Self {
+        Self { src_id, start, end }
     }
 
-    pub const fn call_site() -> Self {
-        Self::new(0, 0)
+    pub fn src_id(&self) -> SourceId {
+        self.src_id
     }
 
-    pub const fn mixed_site() -> Self {
-        Self::call_site()
+    pub fn range(&self) -> std::ops::Range<usize> {
+        self.start..self.end
     }
 
-    pub const fn def_site() -> Self {
-        Self::call_site()
+    pub fn len(&self) -> usize {
+        self.end - self.start
     }
 
-    pub fn byte_range(&self) -> std::ops::Range<usize> {
-        self.start as usize..self.end as usize
-    }
-
-    pub fn start(&self) -> Location {
-        SourceMap::with(|sm| {
-            let file = sm.find(*self).expect("span not found in source map");
-            file.location(self.start as usize)
-        })
-    }
-
-    pub fn end(&self) -> Location {
-        SourceMap::with(|sm| {
-            let file = sm.find(*self).expect("span not found in source map");
-            file.location(self.end as usize)
-        })
-    }
-
-    pub const fn len(&self) -> usize {
-        (self.end - self.start) as usize
-    }
-
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    pub const fn contains(&self, i: usize) -> bool {
-        i >= self.start as usize && i < self.end as usize
+    pub fn contains(&self, other: &Self) -> bool {
+        self.src_id == other.src_id && self.start >= other.start && self.end <= other.end
     }
 
-    pub const fn is_subset(&self, other: &Self) -> bool {
-        self.start >= other.start && self.end <= other.end
-    }
+    pub fn join(self, other: Self) -> Self {
+        assert!(self.src_id == other.src_id);
 
-    pub const fn join(self, other: Self) -> Self {
         let start = if self.start < other.start {
             self.start
         } else {
@@ -73,6 +52,10 @@ impl Span {
             other.end
         };
 
-        Self { start, end }
+        Self {
+            src_id: self.src_id,
+            start,
+            end,
+        }
     }
 }
