@@ -8,7 +8,50 @@ pub use level::*;
 
 use crate::template::Span;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub struct Diagnostics(Vec<Diagnostic>);
+
+impl Diagnostics {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn level(&self) -> Level {
+        let mut level = Level::Note;
+
+        for diagnostic in &self.0 {
+            if diagnostic.code.level > level {
+                level = diagnostic.code.level;
+            }
+        }
+
+        level
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Diagnostic> {
+        self.0.iter()
+    }
+
+    pub fn emit(&mut self, diagnostic: Diagnostic) -> &mut Self {
+        self.0.push(diagnostic);
+        self
+    }
+}
+
+impl IntoIterator for Diagnostics {
+    type IntoIter = std::vec::IntoIter<Diagnostic>;
+    type Item = Diagnostic;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Diagnostic {
     span: Span,
     code: Code,
@@ -52,7 +95,7 @@ impl Span {
 pub mod build {
     use super::*;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct DiagnosticBuilder {
         pub(super) span: Span,
         pub(super) code: Code,
@@ -71,8 +114,8 @@ pub mod build {
             self
         }
 
-        pub fn labels(mut self, labels: Vec<Label>) -> Self {
-            self.labels = labels;
+        pub fn labels(mut self, labels: impl IntoIterator<Item = Label>) -> Self {
+            self.labels.extend(labels);
             self
         }
 

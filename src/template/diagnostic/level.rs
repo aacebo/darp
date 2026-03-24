@@ -1,6 +1,5 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Level {
-    Unknown,
     Note,
     Help,
     Warning,
@@ -8,10 +7,6 @@ pub enum Level {
 }
 
 impl Level {
-    pub fn is_unknown(&self) -> bool {
-        matches!(self, Self::Unknown)
-    }
-
     pub fn is_note(&self) -> bool {
         matches!(self, Self::Note)
     }
@@ -38,7 +33,6 @@ impl Level {
             Self::Warning => "warning",
             Self::Note => "note",
             Self::Help => "help",
-            Self::Unknown => "??",
         }
     }
 }

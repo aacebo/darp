@@ -12,7 +12,7 @@ impl Label {
     pub fn new(span: Span, message: impl std::fmt::Display) -> build::LabelBuilder {
         build::LabelBuilder {
             span,
-            level: Level::Unknown,
+            level: Level::Note,
             message: message.to_string(),
             suggestions: vec![],
         }

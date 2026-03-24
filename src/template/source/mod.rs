@@ -90,6 +90,10 @@ impl Source {
         self.text.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
+    }
+
     /// Resolves the given span into a byte index range.
     pub fn byte_range(&self, span: Span) -> std::ops::Range<usize> {
         let r = span.range();
