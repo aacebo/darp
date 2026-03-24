@@ -10,12 +10,36 @@ pub use punct::*;
 
 use crate::template::LexError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
     Ident(Ident),
     Literal(Literal),
     Punct(Punct),
     Group(Group),
+}
+
+impl From<Ident> for Token {
+    fn from(value: Ident) -> Self {
+        Self::Ident(value)
+    }
+}
+
+impl From<Literal> for Token {
+    fn from(value: Literal) -> Self {
+        Self::Literal(value)
+    }
+}
+
+impl From<Punct> for Token {
+    fn from(value: Punct) -> Self {
+        Self::Punct(value)
+    }
+}
+
+impl From<Group> for Token {
+    fn from(value: Group) -> Self {
+        Self::Group(value)
+    }
 }
 
 impl std::fmt::Display for Token {
@@ -29,7 +53,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Stream {
     tokens: Vec<Token>,
 }

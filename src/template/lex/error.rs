@@ -14,17 +14,17 @@ impl LexError {
         }
     }
 
-    pub fn message(mut self, message: impl std::fmt::Display) -> Self {
-        self.message = Some(message.to_string());
-        self
-    }
-
     pub fn span(&self) -> Span {
         self.span
     }
 
     pub fn is_reject(&self) -> bool {
         self.message.is_none()
+    }
+
+    pub fn message(mut self, message: impl std::fmt::Display) -> Self {
+        self.message = Some(message.to_string());
+        self
     }
 }
 

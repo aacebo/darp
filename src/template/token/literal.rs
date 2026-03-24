@@ -1,34 +1,34 @@
 use crate::template::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Literal {
-    repr: Box<str>,
     span: Span,
+    inner: Box<str>,
 }
 
 macro_rules! lit_constructor {
     ($name:ident, $ty:ty, $fmt:expr) => {
-        pub fn $name(value: $ty) -> Self {
+        pub fn $name(span: Span, value: $ty) -> Self {
             Self {
-                repr: format!($fmt, value).into_boxed_str(),
-                span: Span::default(),
+                span,
+                inner: format!($fmt, value).into_boxed_str(),
             }
         }
     };
 }
 
 impl Literal {
-    pub fn string(value: &str) -> Self {
+    pub fn string(span: Span, value: &str) -> Self {
         Self {
-            repr: format!("{:?}", value).into_boxed_str(),
-            span: Span::default(),
+            span,
+            inner: format!("{:?}", value).into_boxed_str(),
         }
     }
 
-    pub fn character(value: char) -> Self {
+    pub fn character(span: Span, value: char) -> Self {
         Self {
-            repr: format!("{:?}", value).into_boxed_str(),
-            span: Span::default(),
+            span,
+            inner: format!("{:?}", value).into_boxed_str(),
         }
     }
 
@@ -57,21 +57,17 @@ impl Literal {
     lit_constructor!(f32_unsuffixed, f32, "{}");
     lit_constructor!(f64_unsuffixed, f64, "{}");
 
-    pub fn repr(&self) -> &str {
-        &self.repr
-    }
-
     pub fn span(&self) -> Span {
         self.span
     }
 
-    pub fn set_span(&mut self, span: Span) {
-        self.span = span;
+    pub fn inner(&self) -> &str {
+        &self.inner
     }
 }
 
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.repr)
+        write!(f, "{}", self.inner)
     }
 }

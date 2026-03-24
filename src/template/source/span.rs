@@ -14,11 +14,20 @@ pub struct Span {
 
 impl Span {
     pub const fn new(src_id: SourceId, start: usize, end: usize) -> Self {
+        assert!(start <= end);
         Self { src_id, start, end }
     }
 
     pub fn src_id(&self) -> SourceId {
         self.src_id
+    }
+
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
+    pub fn end(&self) -> usize {
+        self.end
     }
 
     /// character range
@@ -54,10 +63,6 @@ impl Span {
             other.end
         };
 
-        Self {
-            src_id: self.src_id,
-            start,
-            end,
-        }
+        Self::new(self.src_id, start, end)
     }
 }

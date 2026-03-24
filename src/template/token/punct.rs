@@ -1,40 +1,36 @@
 use crate::template::{Span, token::Spacing};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Punct {
-    ch: char,
-    spacing: Spacing,
     span: Span,
+    spacing: Spacing,
+    inner: char,
 }
 
 impl Punct {
-    pub fn new(ch: char, spacing: Spacing) -> Self {
+    pub fn new(span: Span, spacing: Spacing, inner: char) -> Self {
         Self {
-            ch,
+            inner,
             spacing,
-            span: Span::default(),
+            span,
         }
-    }
-
-    pub fn as_char(&self) -> char {
-        self.ch
-    }
-
-    pub fn spacing(&self) -> Spacing {
-        self.spacing
     }
 
     pub fn span(&self) -> Span {
         self.span
     }
 
-    pub fn set_span(&mut self, span: Span) {
-        self.span = span;
+    pub fn spacing(&self) -> Spacing {
+        self.spacing
+    }
+
+    pub fn inner(&self) -> char {
+        self.inner
     }
 }
 
 impl std::fmt::Display for Punct {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.ch)
+        write!(f, "{}", self.inner)
     }
 }

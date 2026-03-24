@@ -103,9 +103,11 @@ impl Source {
 
     /// Resolves a global character index within this file into a 0-based `Location`.
     pub fn location(&self, i: usize) -> Location {
+        let index = self.byte(i);
+
         match self.lines.binary_search(&i) {
-            Err(next) => Location::new(i, next - 1, i - self.lines[next - 1]),
-            Ok(line) => Location::new(i, line, 0),
+            Err(next) => Location::new(index, next - 1, i - self.lines[next - 1]),
+            Ok(line) => Location::new(index, line, 0),
         }
     }
 
@@ -118,7 +120,6 @@ impl Source {
         }
 
         let (&ci, &bi) = cache.range(..=i).next_back().unwrap();
-
         let mut char_index = ci;
         let mut byte_index = bi;
 

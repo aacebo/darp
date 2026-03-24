@@ -42,17 +42,17 @@ impl<'a> Cursor<'a> {
         self.rest.starts_with(s)
     }
 
-    pub fn span_to(&self, end: &Cursor<'_>) -> Span {
-        assert!(self.src_id == end.src_id);
-        Span::new(self.src_id, self.offset, end.offset).into()
-    }
-
     pub fn span(&self) -> Span {
         Span::new(self.src_id, self.offset, self.offset + 1).into()
     }
 
     pub fn error(&self) -> LexError {
         LexError::new(self.span())
+    }
+
+    pub fn span_to(&self, end: &Cursor<'_>) -> Span {
+        assert!(self.src_id == end.src_id);
+        Span::new(self.src_id, self.offset, end.offset).into()
     }
 
     /// Advance by `n` bytes, counting characters for the offset.
