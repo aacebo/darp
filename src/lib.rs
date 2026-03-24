@@ -6,7 +6,6 @@ pub mod template;
 pub use assert::{Schema, ToSchema, Validate};
 pub use path::Path;
 pub use reflect::{ToValue, Value};
-pub use template::Template;
 
 #[cfg(feature = "derive")]
 pub mod derive {
