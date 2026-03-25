@@ -1,4 +1,4 @@
-use crate::template::token::{Delim, Stream};
+use crate::template::token::Delim;
 use crate::template::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

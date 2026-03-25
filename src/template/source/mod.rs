@@ -8,6 +8,8 @@ pub use span::*;
 
 use std::{cell::RefCell, collections::BTreeMap};
 
+use crate::template::{Token, lex};
+
 #[repr(transparent)]
 #[derive(Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceId(u32);
@@ -92,6 +94,11 @@ impl Source {
 
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
+    }
+
+    pub fn scan(&self) -> lex::Scanner {
+        let cursor = lex::Cursor::new(self);
+        lex::Scanner::new(cursor)
     }
 
     /// Resolves the given span into a byte index range.

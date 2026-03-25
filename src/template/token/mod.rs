@@ -8,7 +8,7 @@ pub use ident::*;
 pub use literal::*;
 pub use punct::*;
 
-use crate::template::LexError;
+use crate::template::lex;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
@@ -53,34 +53,9 @@ impl std::fmt::Display for Token {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Stream {
-    tokens: Vec<Token>,
-}
-
-impl std::ops::Deref for Stream {
-    type Target = [Token];
-
-    fn deref(&self) -> &Self::Target {
-        &self.tokens
-    }
-}
-
-impl Iterator for Stream {
-    type Item = Result<Token, LexError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl lex::Scan for Token {
+    fn scan(_s: &mut lex::Scanner) -> Option<Self> {
         None
-    }
-}
-
-impl std::fmt::Display for Stream {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for token in self.tokens.iter() {
-            write!(f, "{}", token)?;
-        }
-
-        Ok(())
     }
 }
 
@@ -155,3 +130,23 @@ impl Delim {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct TokenStream {
+    scanner: lex::Scanner,
+}
+
+impl lex::Scan for TokenStream {
+    fn scan(s: &mut lex::Scanner) -> Option<Self> {
+        s.fork().advance(3).skip_comment()
+    }
+}
+
+// impl Iterator for Scanner {
+//     type Item = T;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         let value = T::scan(&mut self.cursor, &mut self.diagnostics)?;
+//         Some(value)
+//     }
+// }

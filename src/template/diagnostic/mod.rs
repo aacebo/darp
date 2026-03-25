@@ -42,6 +42,12 @@ impl Diagnostics {
     }
 }
 
+impl AsRef<[Diagnostic]> for Diagnostics {
+    fn as_ref(&self) -> &[Diagnostic] {
+        &self.0
+    }
+}
+
 impl IntoIterator for Diagnostics {
     type IntoIter = std::vec::IntoIter<Diagnostic>;
     type Item = Diagnostic;

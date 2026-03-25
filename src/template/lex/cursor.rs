@@ -1,73 +1,53 @@
-use crate::template::{Diagnostics, Span, lex::ScanResult, source::SourceId};
+use crate::template::{Span, source::{Source, SourceId}};
 
 /// Zero-copy immutable cursor over source text.
 /// Each parse step returns a new advanced cursor.
-#[derive(Copy, Clone)]
-pub struct Cursor<'a> {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Cursor {
     src_id: SourceId,
-    rest: &'a str,
-    offset: usize,
+    text: *const str,
+    index: usize,
 }
 
-impl<'a> Cursor<'a> {
-    pub fn new(src_id: SourceId, src: &'a str, offset: usize) -> Self {
+impl Cursor {
+    pub fn new(src: &Source) -> Self {
         Self {
-            src_id,
-            rest: src,
-            offset,
+            src_id: src.id(),
+            text: src.text(),
+            index: 0,
         }
     }
 
-    pub fn src_id(&self) -> SourceId {
-        self.src_id
+    pub fn text(&self) -> &str {
+        unsafe { &*self.text }
     }
 
-    pub fn rest(&self) -> &'a str {
-        self.rest
-    }
-
-    pub fn offset(&self) -> usize {
-        self.offset
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.rest.is_empty()
+    pub fn index(&self) -> usize {
+        self.index
     }
 
     pub fn first(&self) -> Option<char> {
-        self.rest.chars().next()
-    }
-
-    pub fn starts_with(&self, s: &str) -> bool {
-        self.rest.starts_with(s)
+        self.text().chars().next()
     }
 
     pub fn span(&self) -> Span {
-        Span::new(self.src_id, self.offset, self.offset + 1)
+        Span::new(self.src_id, self.index, self.index + 1)
     }
 
-    pub fn ok<T>(&self, value: T) -> ScanResult<'_, T> {
-        ScanResult {
-            cursor: *self,
-            value: Some(value),
-            diagnostics: Diagnostics::default(),
-        }
-    }
-
-    pub fn span_to(&self, end: &Cursor<'_>) -> Span {
+    pub fn span_to(&self, end: &Self) -> Span {
         assert!(self.src_id == end.src_id);
-        Span::new(self.src_id, self.offset, end.offset)
+        Span::new(self.src_id, self.index, end.index)
     }
 
-    /// Advance by `n` bytes, counting characters for the offset.
+    /// Advance by `n` bytes, counting characters for the index.
     pub fn advance(&self, n: usize) -> Self {
-        let consumed = &self.rest[..n];
+        let consumed = &self.text()[..n];
         let chars = consumed.chars().count();
 
         Self {
             src_id: self.src_id,
-            rest: &self.rest[n..],
-            offset: self.offset + chars,
+            text: &self.text()[n..],
+            index: self.index + chars,
         }
     }
 
@@ -75,10 +55,11 @@ impl<'a> Cursor<'a> {
     pub fn skip_while(&self, mut pred: impl FnMut(char) -> bool) -> Self {
         let mut bytes = 0;
 
-        for ch in self.rest.chars() {
+        for ch in self.text().chars() {
             if !pred(ch) {
                 break;
             }
+
             bytes += ch.len_utf8();
         }
 
@@ -90,7 +71,7 @@ impl<'a> Cursor<'a> {
             // Whitespace
             let next = self.skip_while(|ch| ch.is_whitespace());
 
-            if next.offset() != self.offset() {
+            if next.index() != self.index() {
                 self = next;
                 continue;
             }
@@ -145,5 +126,19 @@ impl<'a> Cursor<'a> {
         }
 
         None
+    }
+}
+
+impl std::ops::Deref for Cursor {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.text()
+    }
+}
+
+impl std::hash::Hash for Cursor {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.text().hash(state);
     }
 }
