@@ -4,16 +4,16 @@ use crate::template::{Span, diagnostic::Level};
 pub struct Label {
     span: Span,
     level: Level,
-    message: String,
+    message: Option<String>,
     suggestions: Vec<String>,
 }
 
 impl Label {
-    pub fn new(span: Span, message: impl std::fmt::Display) -> build::LabelBuilder {
+    pub fn new(span: Span) -> build::LabelBuilder {
         build::LabelBuilder {
             span,
             level: Level::Note,
-            message: message.to_string(),
+            message: None,
             suggestions: vec![],
         }
     }
@@ -26,8 +26,8 @@ impl Label {
         self.level
     }
 
-    pub fn message(&self) -> &str {
-        &self.message
+    pub fn message(&self) -> Option<&str> {
+        self.message.as_deref()
     }
 
     pub fn suggestions(&self) -> &[String] {
@@ -36,8 +36,8 @@ impl Label {
 }
 
 impl Span {
-    pub fn label(&self, message: impl std::fmt::Display) -> build::LabelBuilder {
-        Label::new(*self, message)
+    pub fn label(&self) -> build::LabelBuilder {
+        Label::new(*self)
     }
 }
 
@@ -48,13 +48,18 @@ pub mod build {
     pub struct LabelBuilder {
         pub(super) span: Span,
         pub(super) level: Level,
-        pub(super) message: String,
+        pub(super) message: Option<String>,
         pub(super) suggestions: Vec<String>,
     }
 
     impl LabelBuilder {
         pub fn level(mut self, level: Level) -> Self {
             self.level = level;
+            self
+        }
+
+        pub fn message(mut self, message: impl std::fmt::Display) -> Self {
+            self.message = Some(message.to_string());
             self
         }
 

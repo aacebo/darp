@@ -1,4 +1,4 @@
-use crate::template::{LexError, Span, source::SourceId};
+use crate::template::{Diagnostics, Span, lex::ScanResult, source::SourceId};
 
 /// Zero-copy immutable cursor over source text.
 /// Each parse step returns a new advanced cursor.
@@ -46,8 +46,12 @@ impl<'a> Cursor<'a> {
         Span::new(self.src_id, self.offset, self.offset + 1)
     }
 
-    pub fn error(&self) -> LexError {
-        LexError::new(self.span())
+    pub fn ok<T>(&self, value: T) -> ScanResult<'_, T> {
+        ScanResult {
+            cursor: *self,
+            value: Some(value),
+            diagnostics: Diagnostics::default(),
+        }
     }
 
     pub fn span_to(&self, end: &Cursor<'_>) -> Span {

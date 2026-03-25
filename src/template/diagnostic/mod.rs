@@ -51,6 +51,12 @@ impl IntoIterator for Diagnostics {
     }
 }
 
+impl Extend<Diagnostic> for Diagnostics {
+    fn extend<T: IntoIterator<Item = Diagnostic>>(&mut self, iter: T) {
+        self.0.extend(iter);
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Diagnostic {
     span: Span,
