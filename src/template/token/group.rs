@@ -1,15 +1,16 @@
 use crate::template::token::Delim;
+use crate::template::token::lex::TokenBuffer;
 use crate::template::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Group {
     span: Span,
     delim: Delim,
-    content: Stream,
+    content: TokenBuffer,
 }
 
 impl Group {
-    pub fn new(span: Span, delim: Delim, content: Stream) -> Self {
+    pub fn new(span: Span, delim: Delim, content: TokenBuffer) -> Self {
         Self {
             span,
             delim,
@@ -25,11 +26,11 @@ impl Group {
         self.delim
     }
 
-    pub fn content(&self) -> &Stream {
+    pub fn content(&self) -> &TokenBuffer {
         &self.content
     }
 
-    pub fn into_content(self) -> Stream {
+    pub fn into_content(self) -> TokenBuffer {
         self.content
     }
 }

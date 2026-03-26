@@ -1,5 +1,6 @@
 mod group;
 mod ident;
+pub mod lex;
 mod literal;
 mod punct;
 
@@ -7,8 +8,6 @@ pub use group::*;
 pub use ident::*;
 pub use literal::*;
 pub use punct::*;
-
-use crate::template::lex;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
@@ -54,8 +53,8 @@ impl std::fmt::Display for Token {
 }
 
 impl lex::Scan for Token {
-    fn scan(_s: &mut lex::Scanner) -> Option<Self> {
-        None
+    fn scan(_s: &mut lex::TokenBuffer) -> Option<Self> {
+        todo!()
     }
 }
 
@@ -131,16 +130,16 @@ impl Delim {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TokenStream {
-    scanner: lex::Scanner,
-}
+// #[derive(Debug, Clone)]
+// pub struct TokenStream {
+//     scanner: lex::Scanner,
+// }
 
-impl lex::Scan for TokenStream {
-    fn scan(s: &mut lex::Scanner) -> Option<Self> {
-        s.fork().advance(3).skip_comment()
-    }
-}
+// impl lex::Scan for TokenStream {
+//     fn scan(s: &mut lex::Scanner) -> Option<Self> {
+//         s.fork().advance(3).skip_comment()
+//     }
+// }
 
 // impl Iterator for Scanner {
 //     type Item = T;

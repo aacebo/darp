@@ -1,31 +1,78 @@
+mod cursor;
 mod fork;
 
+pub use cursor::*;
 pub use fork::*;
 
-use crate::template::{Diagnostic, Span, source::Location};
+use crate::template::{Diagnostic, source::Location};
 
 pub trait Stream: Sized {
     type Item;
 
-    fn span(&self) -> Span;
     fn location(&self) -> Location;
-    fn remaining(&self) -> usize;
-    fn emit(&mut self, diagnostic: Diagnostic) -> &mut Self;
-    fn fork(&self) -> Fork<Self>;
-
-    fn peek_n(&self, n: usize) -> Option<Self::Item>;
-    fn peek(&self) -> Option<Self::Item> {
-        self.peek_n(1)
+    fn cursor(&self) -> Cursor;
+    fn buffer(&self) -> &[Self::Item];
+    fn emit(&mut self, diagnostic: Diagnostic);
+    fn commit(&mut self, next: Self);
+    fn is_eof(&self) -> bool {
+        self.remaining() == 0
     }
 
-    fn next_n(&mut self, n: usize) -> Option<Self::Item>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.next_n(1)
+    fn fork(&mut self) -> Fork<'_, Self>
+    where
+        Self: Clone,
+    {
+        Fork::new(self)
     }
 
-    fn skip_n(&mut self, n: usize) -> Option<&mut Self>;
-    fn skip_while(&mut self, pred: impl FnMut(Self::Item) -> bool) -> Option<&mut Self>;
-    fn skip(&mut self) -> Option<&mut Self> {
-        self.skip_n(1)
+    fn remaining(&self) -> usize {
+        self.cursor().len()
+    }
+
+    fn peek(&self) -> Option<Self::Item>;
+    fn next(&mut self) -> Option<Self::Item>;
+    fn next_n(&mut self, n: usize) -> Option<&[Self::Item]> {
+        let index = self.buffer().len();
+
+        for _ in 0..n {
+            self.next()?;
+        }
+
+        Some(&self.buffer()[index..])
+    }
+
+    fn next_if(&mut self, mut pred: impl FnMut(Self::Item) -> bool) -> Option<Self::Item> {
+        if pred(self.peek()?) {
+            self.next()
+        } else {
+            None
+        }
+    }
+
+    fn next_while(&mut self, mut pred: impl FnMut(Self::Item) -> bool) -> Option<Self::Item> {
+        let mut last: Option<Self::Item> = None;
+
+        while pred(self.peek()?) {
+            last = self.next();
+        }
+
+        last
+    }
+
+    fn skip(&mut self) -> Option<&mut Self>;
+    fn skip_n(&mut self, n: usize) -> Option<&mut Self> {
+        for _ in 0..n {
+            self.skip()?;
+        }
+
+        Some(self)
+    }
+
+    fn skip_while(&mut self, mut pred: impl FnMut(Self::Item) -> bool) -> Option<&mut Self> {
+        while pred(self.peek()?) {
+            self.skip()?;
+        }
+
+        Some(self)
     }
 }
