@@ -1,5 +1,5 @@
-pub mod diagnostic;
 pub mod ast;
+pub mod diagnostic;
 pub mod source;
 pub mod stream;
 pub mod token;
