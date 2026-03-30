@@ -25,6 +25,10 @@ impl Cursor {
         self.index
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+
     pub fn len(&self) -> usize {
         self.length
     }
