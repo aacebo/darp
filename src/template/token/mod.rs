@@ -54,7 +54,7 @@ impl std::fmt::Display for Token {
 }
 
 impl Scan for Token {
-    fn scan<S: super::Scanner<Item = Self>>(_s: &mut S) -> Option<Self> {
+    fn scan<S: super::Scanner>(s: &mut S, d: &mut super::Diagnostics) -> Option<Self> {
         todo!()
     }
 }
