@@ -1,20 +1,19 @@
 use crate::template::token::Delim;
-use crate::template::token::lex::TokenBuffer;
 use crate::template::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Group {
     span: Span,
     delim: Delim,
-    content: TokenBuffer,
+    // content: TokenBuffer,
 }
 
 impl Group {
-    pub fn new(span: Span, delim: Delim, content: TokenBuffer) -> Self {
+    pub fn new(span: Span, delim: Delim) -> Self {
         Self {
             span,
             delim,
-            content,
+            // content,
         }
     }
 
@@ -26,22 +25,22 @@ impl Group {
         self.delim
     }
 
-    pub fn content(&self) -> &TokenBuffer {
-        &self.content
-    }
+    // pub fn content(&self) -> &TokenBuffer {
+    //     &self.content
+    // }
 
-    pub fn into_content(self) -> TokenBuffer {
-        self.content
-    }
+    // pub fn into_content(self) -> TokenBuffer {
+    //     self.content
+    // }
 }
 
 impl std::fmt::Display for Group {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}{}{}",
+            "{}{}",
             self.delim.open(),
-            &self.content,
+            // &self.content,
             self.delim.close()
         )
     }

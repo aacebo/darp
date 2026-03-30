@@ -1,49 +1,48 @@
-use crate::template::{Cursor, Diagnostic, Stream};
+use crate::template::{Cursor, Diagnostic, Scanner};
 
-pub struct Fork<'a, T: Stream + Clone> {
-    prev: &'a mut T,
+pub trait Fork: Scanner {
+    fn fork(&mut self) -> Forked<'_, Self>;
+}
+
+impl<T: Scanner + Clone> Fork for T {
+    fn fork(&mut self) -> Forked<'_, Self> {
+        Forked::of(self, self.clone())
+    }
+}
+
+pub struct Forked<'a, T: Scanner> {
+    inner: &'a mut T,
     next: T,
 }
 
-impl<'a, T: Stream + Clone> Fork<'a, T> {
-    pub fn new(value: &'a mut T) -> Self {
-        Self {
-            next: value.clone(),
-            prev: value,
-        }
+impl<'a, T: Scanner> Forked<'a, T> {
+    pub fn of(inner: &'a mut T, next: T) -> Self {
+        Self { inner, next }
     }
 
     pub fn cancel(self) -> &'a mut T {
-        self.prev
+        self.inner
     }
 
     pub fn merge(self) -> &'a mut T {
-        self.prev.commit(self.next);
-        self.prev
+        self.inner.merge(self.next);
+        self.inner
     }
 }
 
-impl<'a, T: Stream + Clone> Stream for Fork<'a, T> {
+impl<'a, T: Scanner> Scanner for Forked<'a, T> {
     type Item = T::Item;
 
     fn cursor(&self) -> Cursor {
         self.next.cursor()
     }
 
-    fn buffer(&self) -> &[Self::Item] {
-        self.next.buffer()
-    }
-
-    fn location(&self) -> crate::template::source::Location {
-        self.next.location()
+    fn merge(&mut self, other: Self) {
+        self.next.merge(other.next);
     }
 
     fn remaining(&self) -> usize {
         self.next.remaining()
-    }
-
-    fn commit(&mut self, next: Self) {
-        self.next.commit(next.next);
     }
 
     fn emit(&mut self, diagnostic: Diagnostic) {
@@ -56,10 +55,5 @@ impl<'a, T: Stream + Clone> Stream for Fork<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next.next()
-    }
-
-    fn skip(&mut self) -> Option<&mut Self> {
-        self.next.skip()?;
-        Some(self)
     }
 }

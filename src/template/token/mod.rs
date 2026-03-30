@@ -1,6 +1,5 @@
 mod group;
 mod ident;
-pub mod lex;
 mod literal;
 mod punct;
 
@@ -8,6 +7,8 @@ pub use group::*;
 pub use ident::*;
 pub use literal::*;
 pub use punct::*;
+
+use crate::template::Scan;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
@@ -52,8 +53,8 @@ impl std::fmt::Display for Token {
     }
 }
 
-impl lex::Scan for Token {
-    fn scan(_s: &mut lex::TokenBuffer) -> Option<Self> {
+impl Scan for Token {
+    fn scan<S: super::Scanner<Item = Self>>(_s: &mut S) -> Option<Self> {
         todo!()
     }
 }

@@ -1,28 +1,36 @@
 use crate::template::{
     Span,
-    source::{Source, SourceId},
+    source::{Location, Source},
 };
 
 /// Zero-copy immutable cursor over source text.
 /// Each parse step returns a new advanced cursor.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Cursor {
-    src_id: SourceId,
+    src: *const Source,
     index: usize,
     length: usize,
 }
 
 impl Cursor {
-    pub fn new(src: &Source) -> Self {
+    pub fn from_src(src: &Source) -> Self {
         Self {
-            src_id: src.id(),
+            src: std::ptr::from_ref(src),
             index: 0,
             length: src.text().len(),
         }
     }
 
+    pub fn src(&self) -> &Source {
+        unsafe { self.src.as_ref_unchecked() }
+    }
+
     pub fn index(&self) -> usize {
         self.index
+    }
+
+    pub fn location(&self) -> Location {
+        self.src().location(self.index)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -34,21 +42,25 @@ impl Cursor {
     }
 
     pub fn span(&self) -> Span {
-        Span::new(self.src_id, self.index, self.index + 1)
+        Span::new(self.src().id(), self.index, self.index + self.length + 1)
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.src().slice(self.span())
     }
 
     /// Advance by `n` bytes, counting characters for the index.
     pub fn next_n(&self, n: usize) -> Self {
         if n > self.length {
             return Self {
-                src_id: self.src_id,
+                src: self.src,
                 index: self.index + self.length,
                 length: 0,
             };
         }
 
         Self {
-            src_id: self.src_id,
+            src: self.src,
             index: self.index + n,
             length: self.length - n,
         }

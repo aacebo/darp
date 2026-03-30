@@ -8,6 +8,8 @@ pub use span::*;
 
 use std::{cell::RefCell, collections::BTreeMap};
 
+use crate::template::Cursor;
+
 #[repr(transparent)]
 #[derive(Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SourceId(u32);
@@ -92,6 +94,10 @@ impl Source {
 
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
+    }
+
+    pub fn begin(&self) -> Cursor {
+        Cursor::from_src(self)
     }
 
     /// Resolves the given span into a byte index range.
