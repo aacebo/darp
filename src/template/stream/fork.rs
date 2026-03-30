@@ -57,3 +57,58 @@ impl<'a, T: Scanner> Scanner for Forked<'a, T> {
         self.next.next()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::template::source::{Source, SourceId};
+    use crate::template::stream::Stream;
+    use crate::template::stream::tests::Char;
+
+    #[test]
+    fn cancel_preserves_original() {
+        let src = Source::new(SourceId::from(0u32), "abcd");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+
+        s.next(); // consume 'a'
+
+        let mut forked = s.fork();
+
+        forked.next(); // consume 'b' in fork
+        forked.next(); // consume 'c' in fork
+
+        let original = forked.cancel();
+
+        assert_eq!(original.remaining(), 3); // still at 'b'
+        assert_eq!(original.peek(), Some(Char('b')));
+    }
+
+    #[test]
+    fn merge_applies_changes() {
+        let src = Source::new(SourceId::from(0u32), "abcd");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        let mut forked = s.fork();
+
+        forked.next(); // 'a'
+        forked.next(); // 'b'
+
+        let original = forked.merge();
+
+        assert_eq!(original.remaining(), 2);
+        assert_eq!(original.peek(), Some(Char('c')));
+    }
+
+    #[test]
+    fn peek_sees_fork_state() {
+        let src = Source::new(SourceId::from(0u32), "xyz");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        let mut forked = s.fork();
+
+        forked.next(); // consume 'x'
+        assert_eq!(forked.peek(), Some(Char('y')));
+
+        // original unchanged
+        forked.cancel();
+        assert_eq!(s.peek(), Some(Char('x')));
+    }
+}

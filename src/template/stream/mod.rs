@@ -57,23 +57,6 @@ pub trait Scanner: Sized {
 
         last
     }
-
-    // fn skip(&mut self) -> Option<&mut Self>;
-    // fn skip_n(&mut self, n: usize) -> Option<&mut Self> {
-    //     for _ in 0..n {
-    //         self.skip()?;
-    //     }
-
-    //     Some(self)
-    // }
-
-    // fn skip_while(&mut self, mut pred: impl FnMut(Self::Item) -> bool) -> Option<&mut Self> {
-    //     while pred(self.peek()?) {
-    //         self.skip()?;
-    //     }
-
-    //     Some(self)
-    // }
 }
 
 #[derive(Clone)]
@@ -116,5 +99,109 @@ impl<T: Scan + Clone> Scanner for Stream<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         T::scan(self)
+    }
+}
+
+#[cfg(test)]
+pub(super) mod tests {
+    use super::*;
+    use crate::template::source::{Source, SourceId};
+
+    /// Minimal Scan impl for testing: scans a single ASCII char.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(crate) struct Char(pub char);
+
+    impl Scan for Char {
+        fn scan<S: Scanner<Item = Self>>(s: &mut S) -> Option<Self> {
+            let cursor = s.cursor();
+            if cursor.is_empty() {
+                return None;
+            }
+            let ch = cursor.as_str().chars().next()?;
+            // SAFETY: In practice, Scan::scan is always called with S = Stream<Self>
+            // because Buffer/Fork delegate next() to the inner Stream.
+            let stream: &mut Stream<Char> = unsafe { &mut *(s as *mut S as *mut Stream<Char>) };
+            stream.cursor = cursor.next();
+            Some(Char(ch))
+        }
+    }
+
+    #[test]
+    fn next_consumes() {
+        let src = Source::new(SourceId::from(0u32), "abc");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        assert_eq!(s.next(), Some(Char('a')));
+        assert_eq!(s.next(), Some(Char('b')));
+        assert_eq!(s.next(), Some(Char('c')));
+        assert_eq!(s.next(), None);
+    }
+
+    #[test]
+    fn peek_does_not_consume() {
+        let src = Source::new(SourceId::from(0u32), "xy");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        assert_eq!(s.peek(), Some(Char('x')));
+        assert_eq!(s.peek(), Some(Char('x')));
+        assert_eq!(s.next(), Some(Char('x')));
+        assert_eq!(s.peek(), Some(Char('y')));
+    }
+
+    #[test]
+    fn remaining_and_eof() {
+        let src = Source::new(SourceId::from(0u32), "ab");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        assert_eq!(s.remaining(), 2);
+        assert!(!s.is_eof());
+        s.next();
+        s.next();
+        assert_eq!(s.remaining(), 0);
+        assert!(s.is_eof());
+    }
+
+    #[test]
+    fn next_n() {
+        let src = Source::new(SourceId::from(0u32), "abcd");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        let items = s.next_n(3).unwrap();
+
+        assert_eq!(items, vec![Char('a'), Char('b'), Char('c')]);
+        assert_eq!(s.remaining(), 1);
+    }
+
+    #[test]
+    fn next_n_insufficient() {
+        let src = Source::new(SourceId::from(0u32), "a");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+
+        assert!(s.next_n(3).is_none());
+    }
+
+    #[test]
+    fn next_if() {
+        let src = Source::new(SourceId::from(0u32), "ab");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+
+        assert_eq!(s.next_if(|c| c.0 == 'a'), Some(Char('a')));
+        assert_eq!(s.next_if(|c| c.0 == 'a'), None); // 'b' doesn't match
+        assert_eq!(s.remaining(), 1); // 'b' not consumed
+    }
+
+    #[test]
+    fn next_while() {
+        let src = Source::new(SourceId::from(0u32), "aaab");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        let last = s.next_while(|c| c.0 == 'a');
+
+        assert_eq!(last, Some(Char('a')));
+        assert_eq!(s.remaining(), 1);
+        assert_eq!(s.peek(), Some(Char('b')));
+    }
+
+    #[test]
+    fn emit_collects_diagnostics() {
+        let src = Source::new(SourceId::from(0u32), "x");
+        let mut s = Stream::<Char>::new(Cursor::from_src(&src));
+        let span = s.cursor().span();
+        s.emit(Diagnostic::new(span, crate::template::Code::UNEXPECTED_TOKEN).build());
     }
 }
