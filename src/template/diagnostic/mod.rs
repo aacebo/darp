@@ -8,6 +8,10 @@ pub use level::*;
 
 use crate::template::Span;
 
+pub trait Emit {
+    fn emit(&mut self, diagnostic: Diagnostic);
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct Diagnostics(Vec<Diagnostic>);
 
@@ -35,10 +39,11 @@ impl Diagnostics {
     pub fn iter(&self) -> impl Iterator<Item = &Diagnostic> {
         self.0.iter()
     }
+}
 
-    pub fn emit(&mut self, diagnostic: Diagnostic) -> &mut Self {
+impl Emit for Diagnostics {
+    fn emit(&mut self, diagnostic: Diagnostic) {
         self.0.push(diagnostic);
-        self
     }
 }
 

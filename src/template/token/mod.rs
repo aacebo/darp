@@ -53,11 +53,11 @@ impl std::fmt::Display for Token {
     }
 }
 
-impl Scan for Token {
-    fn scan<S: super::Scanner>(s: &mut S, d: &mut super::Diagnostics) -> Option<Self> {
-        todo!()
-    }
-}
+// impl Scan for Token {
+//     fn scan<S: super::Scanner>(_s: &mut S, _d: &mut super::Diagnostics) -> Option<Self> {
+//         todo!()
+//     }
+// }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Spacing {

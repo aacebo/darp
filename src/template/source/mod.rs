@@ -96,8 +96,8 @@ impl Source {
         self.text.is_empty()
     }
 
-    pub fn begin(&self) -> Cursor {
-        Cursor::from_src(self)
+    pub fn begin(&self) -> Cursor<'_> {
+        Cursor::new(self)
     }
 
     /// Resolves the given span into a byte index range.

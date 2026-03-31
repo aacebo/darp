@@ -1,46 +1,40 @@
-mod adapters;
 mod cursor;
 
-pub use adapters::*;
 pub use cursor::*;
 
-use crate::template::{Diagnostics, source::Location};
+use crate::template::source::Location;
 
 pub trait Scan: Sized {
-    fn scan<S: Scanner>(s: &mut S, d: &mut Diagnostics) -> Option<Self>;
+    type Scanner: Stream;
+
+    fn scan(s: &mut Self::Scanner) -> Option<Self>;
 }
 
-pub trait Scanner: Copy {
-    fn cursor(&self) -> Cursor<'_>;
-    fn advance_mut(&mut self, n: usize) -> Option<&mut Self>;
+pub trait Peek: Sized {
+    type Scanner: Stream;
 
-    /// Optional
+    fn peek(s: &Self::Scanner) -> Option<Self>;
+}
 
-    fn location(&self) -> Location {
-        self.cursor().location()
-    }
+pub trait Read {
+    type Item;
 
-    fn is_eof(&self) -> bool {
-        self.cursor().is_eof()
-    }
+    fn read(&mut self) -> Option<Self::Item>;
+}
 
-    fn advance(&self, n: usize) -> Self {
-        let mut next = *self;
+///
+/// A reader of some Stream
+///
+pub trait Stream: Read {
+    fn is_eof(&self) -> bool;
+    fn location(&self) -> Location;
 
-        if let Some(v) = next.advance_mut(n) {
-            next = *v;
-        }
+    fn take(&mut self) -> Option<Self::Item>;
+    fn take_n(&mut self, n: usize) -> Option<Self::Item>;
 
-        next
-    }
+    fn peek(&mut self) -> Option<Self::Item>;
+    fn peek_n(&mut self, n: usize) -> Option<Self::Item>;
 
-    // Adapters
-
-    fn skip(self, n: usize) -> Skip<Self> {
-        Skip::new(self, n)
-    }
-
-    fn peek(self) -> Peek<Self> {
-        Peek::new(self)
-    }
+    fn skip(&mut self);
+    fn skip_n(&mut self, n: usize);
 }
