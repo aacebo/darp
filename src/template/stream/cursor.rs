@@ -9,16 +9,11 @@ use crate::template::{
 pub struct Cursor<'a> {
     source: &'a Source,
     index: usize,
-    length: usize,
 }
 
 impl<'a> Cursor<'a> {
     pub fn new(source: &'a Source) -> Self {
-        Self {
-            source,
-            index: 0,
-            length: source.len(),
-        }
+        Self { source, index: 0 }
     }
 
     pub fn index(&self) -> usize {
@@ -34,11 +29,11 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn len(&self) -> usize {
-        self.length
+        self.source.text().chars().count() - self.index
     }
 
     pub fn span(&self) -> Span {
-        Span::new(self.source.id(), self.index, self.index + self.length)
+        Span::new(self.source.id(), self.index, self.index + self.len())
     }
 
     pub fn remaining(&self) -> &str {
@@ -46,18 +41,16 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn advance(&self, n: usize) -> Self {
-        if n > self.length {
+        if n > self.len() {
             return Self {
                 source: self.source,
-                index: self.index + self.length,
-                length: 0,
+                index: self.index + self.len(),
             };
         }
 
         Self {
             source: self.source,
             index: self.index + n,
-            length: self.length - n,
         }
     }
 }
@@ -66,6 +59,5 @@ impl<'a> std::hash::Hash for Cursor<'a> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.source.id().hash(state);
         self.index.hash(state);
-        self.length.hash(state);
     }
 }

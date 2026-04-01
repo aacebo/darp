@@ -20,7 +20,10 @@ pub trait Read: Sized {
     type Item;
 
     fn read(&mut self) -> Option<Self::Item>;
-    fn peek(self) -> Peekable<Self::Item> {
+
+    // Provided
+
+    fn peekable(self) -> Peekable<Self> {
         Peekable::new(self)
     }
 }

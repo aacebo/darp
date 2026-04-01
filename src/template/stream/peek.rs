@@ -2,25 +2,25 @@ use crate::template::Read;
 
 pub struct Peekable<T: Read> {
     inner: T,
+    peeked: Option<Option<T::Item>>,
 }
 
 impl<T: Read> Peekable<T> {
     pub(super) fn new(inner: T) -> Self {
-        Self { inner }
+        Self {
+            inner,
+            peeked: None,
+        }
     }
 
-    pub fn take(&mut self) -> Vec<T::Item> {
-        let mut items = vec![];
+    pub fn peek(&mut self) -> Option<&T::Item> {
+        let inner = &mut self.inner;
+        self.peeked.get_or_insert_with(|| inner.read()).as_ref()
+    }
 
-        for _ in 0..self.n {
-            if let Some(v) = self.inner.read() {
-                items.push(v);
-            } else {
-                break;
-            }
-        }
-
-        items
+    pub fn peek_mut(&mut self) -> Option<&mut T::Item> {
+        let inner = &mut self.inner;
+        self.peeked.get_or_insert_with(|| inner.read()).as_mut()
     }
 }
 
