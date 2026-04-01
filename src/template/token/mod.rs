@@ -8,8 +8,6 @@ pub use ident::*;
 pub use literal::*;
 pub use punct::*;
 
-use crate::template::Scan;
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
     Ident(Ident),
