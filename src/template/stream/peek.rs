@@ -28,6 +28,9 @@ impl<T: Read> Read for Peekable<T> {
     type Item = T::Item;
 
     fn read(&mut self) -> Option<Self::Item> {
-        self.inner.read()
+        match self.peeked.take() {
+            None => self.inner.read(),
+            Some(v) => v,
+        }
     }
 }
