@@ -129,22 +129,7 @@ impl Delim {
     }
 }
 
-// #[derive(Debug, Clone)]
-// pub struct TokenStream {
-//     scanner: lex::Scanner,
-// }
-
-// impl lex::Scan for TokenStream {
-//     fn scan(s: &mut lex::Scanner) -> Option<Self> {
-//         s.fork().advance(3).skip_comment()
-//     }
-// }
-
-// impl Iterator for Scanner {
-//     type Item = T;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         let value = T::scan(&mut self.cursor, &mut self.diagnostics)?;
-//         Some(value)
-//     }
-// }
+#[derive(Debug, Clone)]
+pub struct Scanner {
+    tokens: Vec<Token>,
+}
