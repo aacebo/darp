@@ -32,6 +32,20 @@ impl<T: Read> Peekable<T> {
             }
         }
     }
+
+    pub fn read_while(&mut self, mut pred: impl FnMut(&T::Item) -> bool) -> usize {
+        let mut count = 0;
+
+        loop {
+            if self.read_if(&mut pred).is_none() {
+                break;
+            }
+
+            count += 1;
+        }
+
+        count
+    }
 }
 
 impl<T: Read> Read for Peekable<T> {

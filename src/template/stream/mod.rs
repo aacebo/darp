@@ -27,4 +27,3 @@ pub trait Read: Sized {
         Peekable::new(self)
     }
 }
-
