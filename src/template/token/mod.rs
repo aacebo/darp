@@ -8,6 +8,8 @@ pub use ident::*;
 pub use literal::*;
 pub use punct::*;
 
+use crate::template::Diagnostics;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
     Ident(Ident),
@@ -132,4 +134,5 @@ impl Delim {
 #[derive(Debug, Clone)]
 pub struct Scanner {
     tokens: Vec<Token>,
+    diagnostics: Diagnostics,
 }
