@@ -28,23 +28,3 @@ pub trait Read: Sized {
     }
 }
 
-// ///
-// /// A reader of some Stream
-// ///
-// pub trait Stream: Read {
-//     fn is_eof(&self) -> bool;
-//     fn location(&self) -> Location;
-
-//     fn take(&mut self) -> Option<Self::Item>;
-//     fn take_n(&mut self, n: usize) -> Option<Self::Item>;
-
-//     fn peek(&mut self) -> Option<Self::Item>;
-//     fn peek_n(&mut self, n: usize) -> Option<Self::Item>;
-
-//     fn skip(&mut self);
-//     fn skip_n(&mut self, n: usize) {
-//         for _ in 0..n {
-//             self.skip();
-//         }
-//     }
-// }

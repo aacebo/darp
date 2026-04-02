@@ -22,6 +22,16 @@ impl<T: Read> Peekable<T> {
         let inner = &mut self.inner;
         self.peeked.get_or_insert_with(|| inner.read()).as_mut()
     }
+
+    pub fn read_if(&mut self, pred: impl FnOnce(&T::Item) -> bool) -> Option<T::Item> {
+        match self.read() {
+            Some(v) if pred(&v) => Some(v),
+            other => {
+                self.peeked = Some(other);
+                None
+            }
+        }
+    }
 }
 
 impl<T: Read> Read for Peekable<T> {
